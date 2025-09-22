@@ -1,0 +1,80 @@
+plugins {
+  id 'com.formkiq.gradle.java-base' version '1.0.0'
+  id 'java-gradle-plugin'
+  id 'com.gradle.plugin-publish' version '2.0.0'
+}
+
+group   'com.formkiq.gradle'
+version '1.0.0'
+
+repositories { mavenCentral() }
+
+/** 1) Define source set BEFORE using functionalTestImplementation */
+sourceSets {
+  functionalTest {
+    java.srcDir file('src/functionalTest/java')
+    resources.srcDir file('src/functionalTest/resources')
+    compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    runtimeClasspath += output + compileClasspath
+  }
+}
+
+/** 2) Wire configurations BEFORE dependencies */
+configurations {
+  functionalTestImplementation.extendsFrom testImplementation
+  functionalTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
+/** 3) Now you can add dependencies */
+dependencies {
+  testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+  functionalTestImplementation gradleTestKit()
+  functionalTestImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
+  functionalTestImplementation 'org.assertj:assertj-core:3.26.0'
+  functionalTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test) {
+  useJUnitPlatform()
+}
+
+/** 4) Register the functional test task */
+tasks.register('functionalTest', Test) {
+  description = 'Runs functional tests.'
+  group = 'verification'
+  testClassesDirs = sourceSets.functionalTest.output.classesDirs
+  classpath = sourceSets.functionalTest.runtimeClasspath
+  useJUnitPlatform()
+  shouldRunAfter tasks.test
+}
+
+/** 5) Ensure plugin-under-test metadata is generated for functional tests */
+gradlePlugin {
+  website = 'https://github.com/formkiq/ytt-gradle-plugin'
+  vcsUrl  = 'https://github.com/formkiq/ytt-gradle-plugin'
+
+  testSourceSets sourceSets.functionalTest
+
+  plugins {
+    javaBase {
+      id = "com.formkiq.gradle.ytt"
+      displayName = "FormKiQ Ytt - https://carvel.dev/ytt"
+      description = "Runs Carvel ytt to render YAML templates via declarative Gradle tasks"
+      implementationClass = "com.formkiq.gradle.YttPlugin"
+      tags = ["formkiq", "ytt"]
+    }
+  }
+}
+
+publishing {
+  publications {
+    pluginMaven(MavenPublication) { }
+  }
+}
+
+/** 6) Make check run everything */
+tasks.named('check') {
+  dependsOn tasks.publishToMavenLocal, tasks.functionalTest
+}
