@@ -40,8 +40,9 @@ Alternatively, you can include it directly with a composite build:
 In your build.gradle:
 
   ytt {
-    outputDir = layout.buildDirectory.dir("distributions/api") # OPTIONAL
-    defaultDataValues.put("version", project.version.toString()) # OPTIONAL
+  
+    outputDir = layout.buildDirectory.dir("build/mydir") # OPTIONAL default build/ytt
+    defaultDataValues.put("version", project.version.toString()) # OPTIONAL data values
 
     specs {
       api {
