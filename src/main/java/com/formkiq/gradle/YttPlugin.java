@@ -49,6 +49,8 @@ public class YttPlugin implements Plugin<Project> {
         t.getYttExecutable().set(ext.getYttExecutable());
         t.getInputFiles().from(spec.getInputFiles());
 
+        t.getHash().set(spec.getHash());
+
         // Merge default + spec data-values
         t.getDataValues().putAll(ext.getDefaultDataValues());
         t.getDataValues().putAll(spec.getDataValues());

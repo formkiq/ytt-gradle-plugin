@@ -38,6 +38,8 @@ public class YttSpec {
 
   /** Ytt Name. */
   private final String name;
+  /** Hash. */
+  private final Property<String> hash;
   /** Input Files. */
   private final ConfigurableFileCollection inputFiles;
   /** absolute file target. */
@@ -55,6 +57,7 @@ public class YttSpec {
    */
   public YttSpec(final String yttName, final ObjectFactory objects) {
     this.name = yttName;
+    this.hash = objects.property(String.class);
     this.inputFiles = objects.fileCollection();
     this.outputFile = objects.fileProperty();
     this.dataValues = objects.mapProperty(String.class, String.class);
@@ -89,6 +92,15 @@ public class YttSpec {
   }
 
   /**
+   * Get Hash.
+   * 
+   * @return {@link Property}
+   */
+  public Property<String> getHash() {
+    return hash;
+  }
+
+  /**
    * Get Input Files.
    * 
    * @return {@link ConfigurableFileCollection}
@@ -99,7 +111,7 @@ public class YttSpec {
 
   /**
    * Get Into File Name.
-   * 
+   *
    * @return {@link Property}
    */
   public Property<String> getIntoFileName() {
@@ -122,6 +134,15 @@ public class YttSpec {
    */
   public RegularFileProperty getOutputFile() {
     return outputFile;
+  }
+
+  /**
+   * Set Hash.
+   * 
+   * @param mode {@link String}
+   */
+  public void hash(final String mode) {
+    this.hash.set(mode);
   }
 
   /**

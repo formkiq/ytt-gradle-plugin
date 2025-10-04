@@ -40,43 +40,14 @@ Alternatively, you can include it directly with a composite build:
 In your build.gradle:
 
   ytt {
-    outputDir = layout.buildDirectory.dir("distributions/api")
-    defaultDataValues.put("version", project.version.toString())
+    outputDir = layout.buildDirectory.dir("distributions/api") # OPTIONAL
+    defaultDataValues.put("version", project.version.toString()) # OPTIONAL
 
     specs {
-      apiLambda {
-        from("src/main/resources/cloudformation/api-lambda.yaml")
-        into("api-lambda.yaml")
-      }
-
       api {
         from("src/main/resources/cloudformation/api.yaml",
              "src/main/resources/cloudformation/openapi-jwt.yaml")
         into("api.yaml")
-      }
-
-      apiIam {
-        from("src/main/resources/cloudformation/api-iam.yaml",
-             "src/main/resources/cloudformation/openapi-iam.yaml")
-        into("api-iam.yaml")
-      }
-
-      apiApikey {
-        from("src/main/resources/cloudformation/api-apikey.yaml",
-             "src/main/resources/cloudformation/openapi-key.yaml")
-        into("api-apikey.yaml")
-      }
-
-      apiAuth {
-        from("src/main/resources/cloudformation/api-auth.yaml",
-             "src/main/resources/cloudformation/openapi-auth.yaml")
-        into("api-auth.yaml")
-      }
-
-      template {
-        from("src/main/resources/cloudformation/template.yaml",
-             "src/main/resources/cloudformation/module-extra-core-ocr.yaml")
-        into("template.yaml")
       }
     }
   }
@@ -91,7 +62,7 @@ Run all renderings:
 
 Or run a single spec:
 
-  ./gradlew yttRender_apiLambda
+  ./gradlew yttRender_api
 
 
 ## Configuration Options

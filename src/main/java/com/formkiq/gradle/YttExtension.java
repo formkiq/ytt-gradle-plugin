@@ -23,6 +23,7 @@
  */
 package com.formkiq.gradle;
 
+import org.gradle.api.Project;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
@@ -49,12 +50,14 @@ public class YttExtension {
    * Constructor.
    * 
    * @param objects {@link ObjectFactory}
+   * @param project {@link Project}
    */
   @Inject
-  public YttExtension(final ObjectFactory objects) {
+  public YttExtension(final ObjectFactory objects, final Project project) {
     this.yttExecutable = objects.property(String.class).convention("ytt");
     this.defaultDataValues = objects.mapProperty(String.class, String.class);
     this.outputDir = objects.directoryProperty();
+    this.outputDir.convention(project.getLayout().getBuildDirectory().dir("ytt"));
     this.specs = objects.domainObjectContainer(YttSpec.class, name -> new YttSpec(name, objects));
   }
 

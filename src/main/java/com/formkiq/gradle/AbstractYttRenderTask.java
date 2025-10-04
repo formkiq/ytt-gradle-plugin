@@ -33,6 +33,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -90,7 +91,8 @@ public abstract class AbstractYttRenderTask extends DefaultTask {
     return m;
   }
 
-  private static String randomAscii(final int n) {
+  private static String randomAscii() {
+    final int n = 10;
     Random r = new Random();
     final int fe = 48;
     final int sf = 75;
@@ -129,6 +131,15 @@ public abstract class AbstractYttRenderTask extends DefaultTask {
   public abstract ListProperty<String> getDataValuesNormalized();
 
   /**
+   * Hash.
+   * 
+   * @return {@link Property}
+   */
+  @Input
+  @Optional
+  public abstract Property<String> getHash();
+
+  /**
    * Get Input Files.
    * 
    * @return {@link ConfigurableFileCollection}
@@ -161,21 +172,21 @@ public abstract class AbstractYttRenderTask extends DefaultTask {
   @TaskAction
   public void runYtt() throws Exception {
     // Rebuild a map from normalized form (sorted "k=v" pairs) for execution-time convenience
-    Map<String, String> dv = normalizedListToMap(getDataValuesNormalized().get());
+    Map<String, String> dv = new HashMap<>(normalizedListToMap(getDataValuesNormalized().get()));
 
-    // Ensure we always have a 'hash' unless provided (keeps behavior matching your original)
-    final int size = 10;
-    if (!dv.containsKey("hash")) {
-      dv = new HashMap<>(dv);
-      dv.put("hash", sha256Hex(randomAscii(size)));
+    String hash = getHash().getOrElse(null);
+    if ("sha256".equals(hash)) {
+      dv.put("hash", sha256Hex(randomAscii()));
     }
 
     List<String> cmd = new ArrayList<>();
     cmd.add(getYttExecutable().get());
+
     dv.forEach((k, v) -> {
       cmd.add("--data-value");
       cmd.add(k + "=" + v);
     });
+
     getInputFiles().forEach(f -> {
       cmd.add("-f");
       cmd.add(f.getAbsolutePath());
@@ -190,7 +201,7 @@ public abstract class AbstractYttRenderTask extends DefaultTask {
     File outFile = getOutputFile().get().getAsFile();
     Path parent = outFile.toPath().getParent();
     if (parent != null) {
-      Files.createDirectories(parent); // SpotBugs-safe replacement for mkdirs()
+      Files.createDirectories(parent);
     }
 
     try (InputStream is = proc.getInputStream(); OutputStream os = new FileOutputStream(outFile)) {

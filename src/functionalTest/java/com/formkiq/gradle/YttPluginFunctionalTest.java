@@ -39,6 +39,9 @@ import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Functional Tests.
+ */
 public class YttPluginFunctionalTest {
 
   private static Path createFakeYttExecutable(final Path dir) throws IOException {
