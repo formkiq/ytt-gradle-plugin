@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Exclude Gradle property accessors that intentionally expose mutable Gradle types -->
+    <Match>
+        <Package name="com.formkiq.gradle"/>
+        <Bug code="EI" /> <!-- Exposed internal representation -->
+    </Match>
+</FindBugsFilter>

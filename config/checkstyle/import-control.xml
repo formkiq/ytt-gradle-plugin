@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE import-control PUBLIC
+    "-//Puppy Crawl//DTD Import Control 1.1//EN"
+    "http://www.puppycrawl.com/dtds/import_control_1_1.dtd">
+
+<import-control pkg="com.formkiq.gradle">
+
+    <allow pkg="org.gradle.api.model" />
+    <allow pkg="org.gradle.api.provider" />
+    <allow pkg="org.gradle.api.file" />
+    <allow pkg="org.gradle.api" />
+
+    <allow pkg="java.io" />
+    <allow pkg="java.nio.charset" />
+    <allow pkg="java.security" />
+    <allow pkg="java.util" />
+    <allow pkg="java.nio.file" />
+
+    <allow pkg="javax.inject" />
+
+</import-control>
