@@ -5,7 +5,10 @@
 
 <import-control pkg="com.formkiq.gradle">
 
+    <allow pkg="groovy.lang" />
+
     <allow pkg="org.gradle.api.model" />
+    <allow pkg="org.gradle.util.internal" />
     <allow pkg="org.gradle.api.provider" />
     <allow pkg="org.gradle.api.file" />
     <allow pkg="org.gradle.api" />

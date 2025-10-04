@@ -23,12 +23,14 @@
  */
 package com.formkiq.gradle;
 
+import groovy.lang.Closure;
 import org.gradle.api.Project;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.util.internal.ConfigureUtil;
 
 import javax.inject.Inject;
 
@@ -95,5 +97,14 @@ public class YttExtension {
    */
   public Property<String> getYttExecutable() {
     return yttExecutable;
+  }
+
+  /**
+   * Set {@link Closure}.
+   *
+   * @param closure {@link Closure}
+   */
+  public void specs(final Closure<?> closure) {
+    ConfigureUtil.configure(closure, specs);
   }
 }
