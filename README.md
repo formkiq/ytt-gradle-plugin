@@ -12,6 +12,7 @@ no more ad-hoc exec { } blocks or shell redirections.
 - Automatic hash generation: a random SHA-256 hash value is generated per build if not provided.
 - Incremental builds: up-to-date checks for input templates and data values.
 - Composable: define multiple specs (template renderings), all grouped under yttRenderAll.
+- Substitute mode: replace data value expressions without consuming ytt overlay annotations.
 
 
 ## Installation
@@ -37,33 +38,74 @@ Alternatively, you can include it directly with a composite build:
 
 ## Usage
 
-In your build.gradle:
+In your `build.gradle`:
 
-  ytt {
-  
-    outputDir = layout.buildDirectory.dir("build/mydir") # OPTIONAL default build/ytt
-    defaultDataValues.put("version", project.version.toString()) # OPTIONAL data values
+```groovy
+ytt {
+  outputDir = layout.buildDirectory.dir("build/mydir") // OPTIONAL, defaults to build/ytt
+  defaultDataValues.put("version", project.version.toString()) // OPTIONAL data values
 
-    specs {
-      api {
-        from("src/main/resources/cloudformation/api.yaml",
-             "src/main/resources/cloudformation/openapi-jwt.yaml")
-        into("api.yaml")
-      }
+  specs {
+    api {
+      from("src/main/resources/cloudformation/api.yaml",
+           "src/main/resources/cloudformation/openapi-jwt.yaml")
+      into("api.yaml")
     }
   }
+}
 
-  tasks.named("assemble").configure {
-    dependsOn("yttRenderAll")
-  }
+tasks.named("assemble").configure {
+  dependsOn("yttRenderAll")
+}
+```
 
 Run all renderings:
 
-  ./gradlew yttRenderAll
+```shell
+./gradlew yttRenderAll
+```
 
 Or run a single spec:
 
-  ./gradlew yttRender_api
+```shell
+./gradlew yttRender_api
+```
+
+## Substitute Mode
+
+Use `renderMode "substitute"` when you need to replace `#@ data.values.*` expressions but keep the rest of the file as ytt source. This is useful for generated overlay files where normal ytt rendering would consume `#@overlay` annotations.
+
+```groovy
+ytt {
+  specs {
+    apiTagschemaLambda {
+      from("src/main/resources/cloudformation/api/module-extra-tagschema-api-lambda.yaml")
+      into("api/module-extra-tagschema-api-lambda.yaml")
+      hash "sha256"
+      renderMode "substitute"
+    }
+  }
+}
+```
+
+Given an input line like:
+
+```yaml
+AutoPublishCodeSha256: #@ data.values.hash or assert.fail("missing version")
+```
+
+The output will contain a generated SHA-256 value:
+
+```yaml
+AutoPublishCodeSha256: 8c9f0d...
+```
+
+Other ytt annotations, including `#@ load(...)`, `#@overlay/match`, and `#@overlay/replace`, are preserved.
+
+Substitute mode has two important constraints:
+
+- It accepts exactly one input file.
+- It only replaces inline `#@ data.values.<key>` expressions, optionally followed by `or assert.fail(...)`; it does not evaluate arbitrary ytt/Starlark.
 
 
 ## Configuration Options
@@ -74,10 +116,13 @@ Top-level ytt extension
 - defaultDataValues: Global --data-value key=value passed to all specs.
 
 Each spec
-- from(...): One or more YAML template files to include.
-- into("file.yaml"): Output file name (relative to ytt.outputDir).
-- outputFile.set(file): Alternative to into(...) if you want a fully qualified path.
-- dataValues.put("key","value"): Extra --data-value options for this spec.
+- `from(...)`: One or more YAML template files to include for normal ytt rendering. Substitute mode requires exactly one file.
+- `into("file.yaml")`: Output file name relative to `ytt.outputDir`.
+- `outputFile.set(file)`: Alternative to `into(...)` if you want a fully qualified path.
+- `dataValues.put("key", "value")`: Extra `--data-value` options for this spec.
+- `hash "sha256"`: Generate a random SHA-256 value and expose it as `data.values.hash`.
+- `renderMode "ytt"`: Default. Invoke ytt and write rendered output.
+- `renderMode "substitute"`: Do not invoke ytt. Copy one input file and replace inline `#@ data.values.key` expressions with data values, preserving other ytt annotations.
 
 
 ## Requirements

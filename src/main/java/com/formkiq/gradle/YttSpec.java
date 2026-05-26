@@ -44,6 +44,8 @@ public class YttSpec {
   private final ConfigurableFileCollection inputFiles;
   /** absolute file target. */
   private final RegularFileProperty outputFile;
+  /** Render mode. */
+  private final Property<String> renderMode;
   /** Data values. */
   private final MapProperty<String, String> dataValues;
   /** file name relative to extension.outputDir (copy-like "into"). */
@@ -60,6 +62,7 @@ public class YttSpec {
     this.hash = objects.property(String.class);
     this.inputFiles = objects.fileCollection();
     this.outputFile = objects.fileProperty();
+    this.renderMode = objects.property(String.class);
     this.dataValues = objects.mapProperty(String.class, String.class);
     this.intoFileName = objects.property(String.class);
   }
@@ -137,6 +140,15 @@ public class YttSpec {
   }
 
   /**
+   * Get Render Mode.
+   * 
+   * @return {@link Property}
+   */
+  public Property<String> getRenderMode() {
+    return renderMode;
+  }
+
+  /**
    * Set Hash.
    * 
    * @param mode {@link String}
@@ -152,5 +164,14 @@ public class YttSpec {
    */
   public void into(final String fileName) {
     this.intoFileName.set(fileName);
+  }
+
+  /**
+   * Set Render Mode.
+   * 
+   * @param mode {@link String}
+   */
+  public void renderMode(final String mode) {
+    this.renderMode.set(mode);
   }
 }
