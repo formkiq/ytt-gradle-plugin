@@ -55,11 +55,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Ytt Render Task.
  */
 public abstract class AbstractYttRenderTask extends DefaultTask {
+
+  /** Render using ytt. */
+  public static final String RENDER_MODE_YTT = "ytt";
+  /** Substitute data values without invoking ytt. */
+  public static final String RENDER_MODE_SUBSTITUTE = "substitute";
 
   /**
    * Called from plugin wiring to keep normalized list in sync with the map.
@@ -157,6 +164,15 @@ public abstract class AbstractYttRenderTask extends DefaultTask {
   public abstract RegularFileProperty getOutputFile();
 
   /**
+   * Render mode.
+   * 
+   * @return {@link Property}
+   */
+  @Input
+  @Optional
+  public abstract Property<String> getRenderMode();
+
+  /**
    * Ytt Executable.
    * 
    * @return {@link Property}
@@ -177,6 +193,16 @@ public abstract class AbstractYttRenderTask extends DefaultTask {
     String hash = getHash().getOrElse(null);
     if ("sha256".equals(hash)) {
       dv.put("hash", sha256Hex(randomAscii()));
+    }
+
+    String renderMode = getRenderMode().getOrElse(RENDER_MODE_YTT);
+    if (RENDER_MODE_SUBSTITUTE.equals(renderMode)) {
+      substituteDataValues(dv);
+      return;
+    }
+
+    if (!RENDER_MODE_YTT.equals(renderMode)) {
+      throw new IllegalArgumentException("Unsupported ytt renderMode: " + renderMode);
     }
 
     List<String> cmd = new ArrayList<>();
@@ -212,5 +238,27 @@ public abstract class AbstractYttRenderTask extends DefaultTask {
     if (exit != 0) {
       throw new RuntimeException("ytt exited with code " + exit + " for " + outFile);
     }
+  }
+
+  private void substituteDataValues(final Map<String, String> dv) throws Exception {
+    List<File> files = new ArrayList<>(getInputFiles().getFiles());
+    if (files.size() != 1) {
+      throw new IllegalArgumentException("renderMode 'substitute' requires exactly one input file");
+    }
+
+    File outFile = getOutputFile().get().getAsFile();
+    Path parent = outFile.toPath().getParent();
+    if (parent != null) {
+      Files.createDirectories(parent);
+    }
+
+    String content = Files.readString(files.get(0).toPath(), StandardCharsets.UTF_8);
+    for (Map.Entry<String, String> e : dv.entrySet()) {
+      String expression = "#@\\s*data\\.values\\." + Pattern.quote(e.getKey())
+          + "(?:\\s+or\\s+assert\\.fail\\([^\\r\\n]*\\))?";
+      content = content.replaceAll(expression, Matcher.quoteReplacement(e.getValue()));
+    }
+
+    Files.writeString(outFile.toPath(), content, StandardCharsets.UTF_8);
   }
 }

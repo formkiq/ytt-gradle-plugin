@@ -105,10 +105,15 @@ public class YttPluginFunctionalTest {
         .withPluginClasspath().withArguments("yttRenderAll", "--stacktrace").build();
 
     assertThat(result1.task(":yttRender_api").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+    assertThat(result1.task(":yttRender_overlay").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
     Path out = testProjectDir.resolve("build/distributions/api/api.yaml");
     assertThat(out).exists();
     String content1 = Files.readString(out);
     assertThat(content1).contains("FAKE_YTT").contains("api.yaml").contains("openapi-jwt.yaml");
+    Path overlayOut = testProjectDir.resolve("build/distributions/api/overlay.yaml");
+    String overlayContent = Files.readString(overlayOut);
+    assertThat(overlayContent).contains("#@overlay/match by=overlay.all")
+        .containsPattern("AutoPublishCodeSha256: [0-9a-f]{64}").doesNotContain("data.values.hash");
 
     // 2) Second run: no changes → UP_TO_DATE
     BuildResult result2 = GradleRunner.create().withProjectDir(testProjectDir.toFile())
@@ -156,6 +161,17 @@ public class YttPluginFunctionalTest {
     Files.writeString(resourcesDir.resolve("api.yaml"), "api: v1\n", StandardCharsets.UTF_8);
     Files.writeString(resourcesDir.resolve("openapi-jwt.yaml"), "jwt: enabled\n",
         StandardCharsets.UTF_8);
+    Files.writeString(resourcesDir.resolve("overlay.yaml"), """
+        #@ load(\"@ytt:overlay\", \"overlay\")
+        #@ load(\"@ytt:data\", \"data\")
+        #@overlay/match by=overlay.all
+        ---
+        Resources:
+          #@overlay/match missing_ok=True
+          DocumentsApiRequests:
+            Properties:
+              AutoPublishCodeSha256: #@ data.values.hash or assert.fail(\"missing version\")
+        """, StandardCharsets.UTF_8);
 
     // Create a fake ytt executable that prints a deterministic banner and the list of -f files
     fakeYtt = createFakeYttExecutable(testProjectDir);
@@ -171,7 +187,10 @@ public class YttPluginFunctionalTest {
         + "  specs {\n" + "    api {\n"
         + "      from('src/main/resources/cloudformation/api.yaml',\n"
         + "           'src/main/resources/cloudformation/openapi-jwt.yaml')\n"
-        + "      into('api.yaml')\n" + "    }\n" + "  }\n" + "}\n";
+        + "      into('api.yaml')\n" + "    }\n" + "    overlay {\n"
+        + "      from('src/main/resources/cloudformation/overlay.yaml')\n"
+        + "      into('overlay.yaml')\n" + "      hash 'sha256'\n"
+        + "      renderMode 'substitute'\n" + "    }\n" + "  }\n" + "}\n";
     Files.writeString(buildFile, buildScript, StandardCharsets.UTF_8);
   }
 }

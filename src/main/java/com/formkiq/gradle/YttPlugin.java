@@ -50,6 +50,7 @@ public class YttPlugin implements Plugin<Project> {
         t.getInputFiles().from(spec.getInputFiles());
 
         t.getHash().set(spec.getHash());
+        t.getRenderMode().set(spec.getRenderMode());
 
         // Merge default + spec data-values
         t.getDataValues().putAll(ext.getDefaultDataValues());

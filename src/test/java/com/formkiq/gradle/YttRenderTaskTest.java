@@ -26,7 +26,11 @@ package com.formkiq.gradle;
 import org.gradle.api.Project;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +41,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class YttRenderTaskTest {
+
+  /** Temp Dir. */
+  @TempDir
+  Path tempDir;
 
   @Test
   void normalizeDataValuesSortsByKeyAndSerializesAsKeyEqValue() {
@@ -49,6 +57,39 @@ public class YttRenderTaskTest {
     assertTrue(normalized.contains("alpha=1"));
     assertTrue(normalized.contains("beta="));
     assertTrue(normalized.contains("zeta=9"));
+  }
+
+  @Test
+  void substituteRenderModeReplacesDataValueExpressionsAndPreservesAnnotations() throws Exception {
+    Path input = tempDir.resolve("overlay.yaml");
+    Path output = tempDir.resolve("build/overlay.yaml");
+    Files.writeString(input, """
+        #@ load(\"@ytt:overlay\", \"overlay\")
+        #@ load(\"@ytt:data\", \"data\")
+        #@overlay/match by=overlay.all
+        ---
+        Resources:
+          #@overlay/match missing_ok=True
+          DocumentsApiRequests:
+            Properties:
+              AutoPublishCodeSha256: #@ data.values.hash or assert.fail(\"missing version\")
+        """, StandardCharsets.UTF_8);
+
+    Project project = ProjectBuilder.builder().build();
+    var task = project.getTasks().register("renderSubstitute", AbstractYttRenderTask.class, t -> {
+      t.getYttExecutable().set("ytt");
+      t.getRenderMode().set(AbstractYttRenderTask.RENDER_MODE_SUBSTITUTE);
+      t.getInputFiles().from(input.toFile());
+      t.getOutputFile().set(output.toFile());
+      t.getDataValuesNormalized().set(List.of("hash=abc123"));
+    }).get();
+
+    task.runYtt();
+
+    String rendered = Files.readString(output, StandardCharsets.UTF_8);
+    assertTrue(rendered.contains("#@overlay/match by=overlay.all"));
+    assertTrue(rendered.contains("AutoPublishCodeSha256: abc123"));
+    assertFalse(rendered.contains("data.values.hash"));
   }
 
   @Test
